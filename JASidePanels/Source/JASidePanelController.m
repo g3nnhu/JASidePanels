@@ -80,6 +80,7 @@ static char ja_kvoContext;
 @synthesize allowLeftSwipe = _allowLeftSwipe;
 @synthesize allowRightSwipe = _allowRightSwipe;
 @synthesize pushesSidePanels = _pushesSidePanels;
+@synthesize pushesLeftPanelOver = _pushesLeftPanelOver;
 
 #pragma mark - Icon
 
@@ -308,6 +309,12 @@ static char ja_kvoContext;
 - (void)_layoutSideContainers:(BOOL)animate duration:(NSTimeInterval)duration {
     CGRect leftFrame = self.view.bounds;
     CGRect rightFrame = self.view.bounds;
+    if (self.pushesLeftPanelOver)
+    {
+        leftFrame.size.width = self.leftVisibleWidth;
+        leftFrame.origin.x = self.centerPanelContainer.frame.origin.x;
+    
+    }
     if (self.style == JASidePanelMultipleActive) {
         // left panel container
         leftFrame.size.width = self.leftVisibleWidth;
@@ -785,7 +792,11 @@ static char ja_kvoContext;
             break;
 		}
         case JASidePanelLeftVisible: {
-            frame.origin.x = self.leftVisibleWidth;
+            if (self.pushesLeftPanelOver)
+                frame.origin.x = 0.f;
+            else
+                frame.origin.x = self.leftVisibleWidth;
+            
             if (self.style == JASidePanelMultipleActive) {
                 frame.size.width = self.view.bounds.size.width - self.leftVisibleWidth;
             }
@@ -827,6 +838,9 @@ static char ja_kvoContext;
     [self _loadLeftPanel];
     
     [self _adjustCenterFrame];
+    
+    if (self.pushesLeftPanelOver)
+        [self.view bringSubviewToFront:self.leftPanelContainer];
     
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:nil];
@@ -870,6 +884,9 @@ static char ja_kvoContext;
     self.state = JASidePanelCenterVisible;
     
     [self _adjustCenterFrame];
+    
+    if (self.pushesLeftPanelOver)
+        [self.view bringSubviewToFront:self.centerPanelContainer];
     
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:^(__unused BOOL finished) {
