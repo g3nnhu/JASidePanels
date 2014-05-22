@@ -915,8 +915,19 @@ static char ja_kvoContext;
         else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible) action = @"out";
         if (self.centerPanelContainer.frame.origin.x> self.leftVisibleWidth)
             action = @"nopl";
-        if (tmp) action = @"nopl";
-        [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
+        else
+        if (tmp)
+        {
+            action = @"nopl";
+            [UIView animateWithDuration:self.bounceDuration
+                             animations:^{
+                self.centerPanelContainer.frame = CGRectOffset(self.centerPanelContainer.frame, self.leftVisibleWidth-self.centerPanelContainer.frame.origin.x + MIN(30, self.bouncePercentage*self.centerPanelContainer.frame.size.width), 0);}
+                             completion:^(BOOL finished) {
+                [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
+            }];
+        }
+        else
+            [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
     }
     
     if (animated) {
