@@ -738,6 +738,71 @@ static char ja_kvoContext;
     return max > 0.0f ? self.maximumAnimationDuration * (remaining / max) : self.maximumAnimationDuration;
 }
 
+- (void)_animateLeftPanelForAction:(NSString *)action bounce:(BOOL)shouldBounce completion:(void (^)(BOOL finished))completion {
+    CGFloat bounceDistance = (_centerPanelRestingFrame.origin.x - self.centerPanelContainer.frame.origin.x) * self.bouncePercentage;
+    
+    // looks bad if we bounce when the center panel grows
+    if (_centerPanelRestingFrame.size.width > self.centerPanelContainer.frame.size.width) {
+        shouldBounce = NO;
+    }
+    
+    CGRect original = self.leftPanelContainer.frame;
+    
+    CGRect animationStartFrame = original;
+    CGRect animationEndFrame = original;
+    
+    if ([action isEqualToString:@"in"])
+    {
+        animationStartFrame = CGRectOffset(original, -original.size.width, 0);
+        animationEndFrame = original;
+    }
+    else   if ([action isEqualToString:@"out"])
+    {
+        animationStartFrame = original;
+        animationEndFrame = CGRectOffset(original, -original.size.width, 0);
+    }
+    
+    self.leftPanelContainer.frame = animationStartFrame;
+    
+    CGFloat duration = [self _calculatedDuration];
+    [UIView animateWithDuration:duration delay:0.0f options:UIViewAnimationOptionCurveLinear|UIViewAnimationOptionLayoutSubviews animations:^{
+        self.leftPanelContainer.frame = animationEndFrame;
+        [self styleContainer:self.leftPanelContainer animate:YES duration:duration];
+        if (self.style == JASidePanelMultipleActive || self.pushesSidePanels) {
+            [self _layoutSideContainers:NO duration:0.0f];
+        }
+    } completion:^(BOOL finished) {
+        if ([action isEqualToString:@"in"] || [action isEqualToString:@"nopl"])
+            [self.view bringSubviewToFront:self.leftPanelContainer];
+        else if ([action isEqualToString:@"out"] || [action isEqualToString:@"nopc"])
+            [self.view bringSubviewToFront:self.centerPanelContainer];
+        
+        self.leftPanelContainer.frame = original;
+        if (shouldBounce) {
+            // make sure correct panel is displayed under the bounce
+            if (self.state == JASidePanelCenterVisible) {
+                if (bounceDistance > 0.0f) {
+                    [self _loadLeftPanel];
+                } else {
+                    [self _loadRightPanel];
+                }
+            }
+            // animate the bounce
+            [UIView animateWithDuration:self.bounceDuration delay:0.0f options:UIViewAnimationOptionCurveEaseOut animations:^{
+                CGRect bounceFrame = _centerPanelRestingFrame;
+                bounceFrame.origin.x += bounceDistance;
+                self.centerPanelContainer.frame = bounceFrame;
+            } completion:^(__unused BOOL finished2) {
+                [UIView animateWithDuration:self.bounceDuration delay:0.0f options:UIViewAnimationOptionCurveEaseIn animations:^{
+                    self.centerPanelContainer.frame = _centerPanelRestingFrame;
+                } completion:completion];
+            }];
+        } else if (completion) {
+            completion(finished);
+        }
+    }];
+}
+
 - (void)_animateCenterPanel:(BOOL)shouldBounce completion:(void (^)(BOOL finished))completion {
     CGFloat bounceDistance = (_centerPanelRestingFrame.origin.x - self.centerPanelContainer.frame.origin.x) * self.bouncePercentage;
     
@@ -834,13 +899,25 @@ static char ja_kvoContext;
 #pragma mark - Showing Panels
 
 - (void)_showLeftPanel:(BOOL)animated bounce:(BOOL)shouldBounce {
+    
+    JASidePanelState prevState = self.state;
+    BOOL tmp = [self _validateThreshold:self.centerPanelContainer.frame.origin.x];
+    
     self.state = JASidePanelLeftVisible;
     [self _loadLeftPanel];
     
     [self _adjustCenterFrame];
     
     if (self.pushesLeftPanelOver)
-        [self.view bringSubviewToFront:self.leftPanelContainer];
+    {
+        NSString * action = @"in";
+        if (prevState == self.state) action = @"nopl";
+        else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible) action = @"out";
+        if (self.centerPanelContainer.frame.origin.x> self.leftVisibleWidth)
+            action = @"nopl";
+        if (tmp) action = @"nopl";
+        [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
+    }
     
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:nil];
@@ -881,13 +958,18 @@ static char ja_kvoContext;
 }
 
 - (void)_showCenterPanel:(BOOL)animated bounce:(BOOL)shouldBounce {
+    JASidePanelState prevState = self.state;
     self.state = JASidePanelCenterVisible;
     
     [self _adjustCenterFrame];
     
     if (self.pushesLeftPanelOver)
-        [self.view bringSubviewToFront:self.centerPanelContainer];
-    
+    {
+        NSString * action = @"in";
+        if (prevState == self.state) action = @"nopc";
+        else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible) action = @"out";
+        [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
+    }
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:^(__unused BOOL finished) {
             self.leftPanelContainer.hidden = YES;
