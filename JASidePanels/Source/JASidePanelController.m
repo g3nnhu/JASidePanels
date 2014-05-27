@@ -309,17 +309,30 @@ static char ja_kvoContext;
 - (void)_layoutSideContainers:(BOOL)animate duration:(NSTimeInterval)duration {
     CGRect leftFrame = self.view.bounds;
     CGRect rightFrame = self.view.bounds;
+    
+    BOOL isIOS7OrOlder =  ([[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] != NSOrderedAscending);
+    CGSize statusBarSize = [[UIApplication sharedApplication] statusBarFrame].size;
+    CGFloat statusBarHeight = MIN(statusBarSize.width, statusBarSize.height);
+    
     if (self.pushesLeftPanelOver)
     {
         leftFrame.size.width = self.leftVisibleWidth;
         leftFrame.origin.x = self.centerPanelContainer.frame.origin.x;
-    
+        if (isIOS7OrOlder)
+            {
+                leftFrame.origin.y = statusBarHeight;
+                leftFrame.size.height = self.centerPanelContainer.frame.size.height - statusBarHeight;
+            }
     }
     if (self.pushesRightPanelOver)
     {
         rightFrame.size.width = self.rightVisibleWidth;
         rightFrame.origin.x = self.centerPanelContainer.frame.origin.x + self.centerPanelContainer.frame.size.width - rightFrame.size.width;
-        
+        if (isIOS7OrOlder)
+        {
+            rightFrame.origin.y = statusBarHeight;
+            rightFrame.size.height = self.centerPanelContainer.frame.size.height - statusBarHeight;
+        }
     }
     if (self.style == JASidePanelMultipleActive) {
         // left panel container
