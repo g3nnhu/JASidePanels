@@ -43,7 +43,10 @@
     self.viewController.shouldDelegateAutorotateToVisiblePanel = NO;
     
     self.viewController.leftFixedWidth = 200;
+    self.viewController.rightFixedWidth = 300;
+
     self.viewController.pushesLeftPanelOver = YES;
+    self.viewController.pushesRightPanelOver =YES;
 	self.viewController.leftPanel = [[JALeftViewController alloc] init];
 	self.viewController.centerPanel = [[UINavigationController alloc] initWithRootViewController:[[JACenterViewController alloc] init]];
 	self.viewController.rightPanel = [[JARightViewController alloc] init];

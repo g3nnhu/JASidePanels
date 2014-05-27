@@ -24,6 +24,7 @@
  */
 
 #import "JACenterViewController.h"
+#import "JAAppDelegate.h"
 
 @interface JACenterViewController ()
 
@@ -45,6 +46,12 @@
     CGFloat green = (CGFloat)arc4random() / 0x100000000;
     CGFloat blue = (CGFloat)arc4random() / 0x100000000;
     self.view.backgroundColor = [UIColor colorWithRed:red green:green blue:blue alpha:1.0f];
+    
+    UIButton * r = [[UIButton alloc] initWithFrame:CGRectMake(50, 50, 70, 60)];
+    r.backgroundColor = [UIColor blackColor];
+    
+    [r addTarget:[(JAAppDelegate *)[[UIApplication sharedApplication] delegate] viewController] action:@selector(toggleRightPanel:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:r];
 }
 
 @end
