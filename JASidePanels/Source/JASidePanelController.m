@@ -1066,6 +1066,13 @@ static char ja_kvoContext;
         else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible) action = @"out";
         [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
     }
+    if (self.pushesRightPanelOver)
+    {
+        NSString * action = @"in";
+        if (prevState == self.state) action = @"nopc";
+        else if (prevState == JASidePanelRightVisible && self.state == JASidePanelCenterVisible) action = @"out";
+        [self _animateRightPanelForAction:action bounce:shouldBounce completion:nil];
+    }
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:^(__unused BOOL finished) {
             self.leftPanelContainer.hidden = YES;
