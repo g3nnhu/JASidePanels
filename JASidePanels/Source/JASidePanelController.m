@@ -328,7 +328,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
             if (isBlurAvaialable)
             {
                 // create blur view
-                UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+                UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleDark];
                 UIVisualEffectView *blurEffectView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
                 blurEffectView.frame = self.view.frame;
                 blurEffectView.autoresizingMask = container.autoresizingMask;
