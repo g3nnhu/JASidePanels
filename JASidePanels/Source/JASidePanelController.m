@@ -28,6 +28,8 @@
 
 static char ja_kvoContext;
 
+static NSInteger BLUR_VIEW_TAG = 653954;
+
 @interface JASidePanelController() {
     CGRect _centerPanelRestingFrame;		
     CGPoint _locationBeforePan;
@@ -292,6 +294,7 @@ static char ja_kvoContext;
     container.layer.shadowRadius = 10.0f;
     container.layer.shadowOpacity = 0.75f;
     container.clipsToBounds = NO;
+    
 }
 
 - (void)stylePanel:(UIView *)panel {
@@ -306,33 +309,63 @@ static char ja_kvoContext;
     self.centerPanelContainer.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 }
 
+-(void)addBlurToCenterPanelContainter:(BOOL)hasBlur
+{
+    UIView * container = self.tapView;
+    BOOL isBlurAvaialable = YES;
+    BOOL isIOS8OrOlder =  ([[[UIDevice currentDevice] systemVersion] compare:@"8.0" options:NSNumericSearch] != NSOrderedAscending);
+
+    if (!isIOS8OrOlder)
+        isBlurAvaialable = NO;
+    if (UIAccessibilityIsReduceTransparencyEnabled != NULL && UIAccessibilityIsReduceTransparencyEnabled()) {
+        isBlurAvaialable = NO;
+    }
+    
+    if (hasBlur)
+    {
+        if (![container viewWithTag:BLUR_VIEW_TAG])
+        {
+            if (isBlurAvaialable)
+            {
+                // create blur view
+                UIBlurEffect *blurEffect = [UIBlurEffect effectWithStyle:UIBlurEffectStyleLight];
+                UIVisualEffectView *blurEffectView = [[UIVisualEffectView alloc] initWithEffect:blurEffect];
+                blurEffectView.frame = self.view.frame;
+                blurEffectView.autoresizingMask = container.autoresizingMask;
+                blurEffectView.tag = BLUR_VIEW_TAG;
+                [container addSubview:blurEffectView];
+            }
+            else
+            {
+                // create simple black bg
+                UIView *simpleBGView = [[UIView alloc] initWithFrame:container.bounds];
+                simpleBGView.autoresizingMask = container.autoresizingMask;
+                simpleBGView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.3];
+                simpleBGView.tag = BLUR_VIEW_TAG;
+                [container addSubview:simpleBGView];
+            }
+        }
+    }
+    else
+    {
+        [[container viewWithTag:BLUR_VIEW_TAG] removeFromSuperview];
+    }
+}
+
 - (void)_layoutSideContainers:(BOOL)animate duration:(NSTimeInterval)duration {
     CGRect leftFrame = self.view.bounds;
     CGRect rightFrame = self.view.bounds;
     
-    BOOL isIOS7OrOlder =  ([[[UIDevice currentDevice] systemVersion] compare:@"7.0" options:NSNumericSearch] != NSOrderedAscending);
-    CGSize statusBarSize = [[UIApplication sharedApplication] statusBarFrame].size;
-    CGFloat statusBarHeight = MIN(statusBarSize.width, statusBarSize.height);
-    
+   
     if (self.pushesLeftPanelOver)
     {
         leftFrame.size.width = self.leftVisibleWidth;
         leftFrame.origin.x = self.centerPanelContainer.frame.origin.x;
-        if (isIOS7OrOlder)
-            {
-                leftFrame.origin.y = statusBarHeight;
-                leftFrame.size.height = self.centerPanelContainer.frame.size.height - statusBarHeight;
-            }
     }
     if (self.pushesRightPanelOver)
     {
         rightFrame.size.width = self.rightVisibleWidth;
         rightFrame.origin.x = self.centerPanelContainer.frame.origin.x + self.centerPanelContainer.frame.size.width - rightFrame.size.width;
-        if (isIOS7OrOlder)
-        {
-            rightFrame.origin.y = statusBarHeight;
-            rightFrame.size.height = self.centerPanelContainer.frame.size.height - statusBarHeight;
-        }
     }
     if (self.style == JASidePanelMultipleActive) {
         // left panel container
@@ -782,7 +815,7 @@ static char ja_kvoContext;
     }
     
     self.leftPanelContainer.frame = animationStartFrame;
-    
+    [self.leftPanelContainer.superview bringSubviewToFront:self.leftPanelContainer];
     CGFloat duration = [self _calculatedDuration];
     [UIView animateWithDuration:duration delay:0.0f options:UIViewAnimationOptionCurveLinear|UIViewAnimationOptionLayoutSubviews animations:^{
         self.leftPanelContainer.frame = animationEndFrame;
@@ -1030,6 +1063,7 @@ static char ja_kvoContext;
     if (self.style == JASidePanelSingleActive) {
         self.tapView = [[UIView alloc] init];
     }
+    [self addBlurToCenterPanelContainter:YES];
     [self _toggleScrollsToTopForCenter:NO left:YES right:NO];
 }
 
@@ -1086,6 +1120,7 @@ static char ja_kvoContext;
         else if (prevState == JASidePanelRightVisible && self.state == JASidePanelCenterVisible) action = @"out";
         [self _animateRightPanelForAction:action bounce:shouldBounce completion:nil];
     }
+    [self addBlurToCenterPanelContainter:NO];
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:^(__unused BOOL finished) {
             self.leftPanelContainer.hidden = YES;
