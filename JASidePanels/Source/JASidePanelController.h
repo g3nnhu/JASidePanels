@@ -36,6 +36,12 @@ typedef enum _JASidePanelState {
     JASidePanelRightVisible
 } JASidePanelState;
 
+typedef enum _JASidePanelAnimationAction {
+    JASidePanelAnimationActionNothing = 0,
+    JASidePanelAnimationActionIn = 1,
+    JASidePanelAnimationActionOut = 2
+} JASidePanelAnimationAction;
+
 @interface JASidePanelController : UIViewController<UIGestureRecognizerDelegate>
 
 #pragma mark - Usage

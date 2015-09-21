@@ -701,6 +701,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     return NO;
 }
 
+
 - (BOOL)_isOnTopLevelViewController:(UIViewController *)root {
     if ([root isKindOfClass:[UINavigationController class]]) {
         UINavigationController *nav = (UINavigationController *)root;
@@ -790,7 +791,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     return max > 0.0f ? self.maximumAnimationDuration * (remaining / max) : self.maximumAnimationDuration;
 }
 
-- (void)_animateLeftPanelForAction:(NSString *)action bounce:(BOOL)shouldBounce completion:(void (^)(BOOL finished))completion {
+- (void)_animateLeftPanelForAction:(JASidePanelAnimationAction)action bounce:(BOOL)shouldBounce completion:(void (^)(BOOL finished))completion {
     CGFloat bounceDistance = (_centerPanelRestingFrame.origin.x - self.centerPanelContainer.frame.origin.x) * self.bouncePercentage;
     
     // looks bad if we bounce when the center panel grows
@@ -803,12 +804,12 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     CGRect animationStartFrame = original;
     CGRect animationEndFrame = original;
     
-    if ([action isEqualToString:@"in"])
+    if (action == JASidePanelAnimationActionIn)
     {
         animationStartFrame = CGRectOffset(original, -original.size.width, 0);
         animationEndFrame = original;
     }
-    else   if ([action isEqualToString:@"out"])
+    else   if (action == JASidePanelAnimationActionOut)
     {
         animationStartFrame = original;
         animationEndFrame = CGRectOffset(original, -original.size.width, 0);
@@ -817,6 +818,8 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     self.leftPanelContainer.frame = animationStartFrame;
     [self.leftPanelContainer.superview bringSubviewToFront:self.leftPanelContainer];
     CGFloat duration = [self _calculatedDuration];
+    if (action == JASidePanelAnimationActionNothing)
+        duration = 0.f;
     [UIView animateWithDuration:duration delay:0.0f options:UIViewAnimationOptionCurveLinear|UIViewAnimationOptionLayoutSubviews animations:^{
         self.leftPanelContainer.frame = animationEndFrame;
         [self styleContainer:self.leftPanelContainer animate:YES duration:duration];
@@ -824,9 +827,9 @@ static NSInteger BLUR_VIEW_TAG = 653954;
             [self _layoutSideContainers:NO duration:0.0f];
         }
     } completion:^(BOOL finished) {
-        if ([action isEqualToString:@"in"] || [action isEqualToString:@"nopl"])
+        if (action == JASidePanelAnimationActionIn)
             [self.view bringSubviewToFront:self.leftPanelContainer];
-        else if ([action isEqualToString:@"out"] || [action isEqualToString:@"nopc"])
+        else if (action == JASidePanelAnimationActionOut)
             [self.view bringSubviewToFront:self.centerPanelContainer];
         
         self.leftPanelContainer.frame = original;
@@ -855,7 +858,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     }];
 }
 
-- (void)_animateRightPanelForAction:(NSString *)action bounce:(BOOL)shouldBounce completion:(void (^)(BOOL finished))completion {
+- (void)_animateRightPanelForAction:(JASidePanelAnimationAction)action bounce:(BOOL)shouldBounce completion:(void (^)(BOOL finished))completion {
     CGFloat bounceDistance = (_centerPanelRestingFrame.origin.x - self.centerPanelContainer.frame.origin.x) * self.bouncePercentage;
     
     // looks bad if we bounce when the center panel grows
@@ -868,19 +871,19 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     CGRect animationStartFrame = original;
     CGRect animationEndFrame = original;
     
-    if ([action isEqualToString:@"in"])
+    if (action == JASidePanelAnimationActionIn)
     {
         animationStartFrame = CGRectOffset(original, original.size.width, 0);
         animationEndFrame = original;
     }
-    else   if ([action isEqualToString:@"out"])
+    else   if (action == JASidePanelAnimationActionOut)
     {
         animationStartFrame = original;
         animationEndFrame = CGRectOffset(original, original.size.width, 0);
     }
     
     self.rightPanelContainer.frame = animationStartFrame;
-    
+    [self.rightPanelContainer.superview bringSubviewToFront:self.rightPanelContainer];
     CGFloat duration = [self _calculatedDuration];
     [UIView animateWithDuration:duration delay:0.0f options:UIViewAnimationOptionCurveLinear|UIViewAnimationOptionLayoutSubviews animations:^{
         self.rightPanelContainer.frame = animationEndFrame;
@@ -889,9 +892,9 @@ static NSInteger BLUR_VIEW_TAG = 653954;
             [self _layoutSideContainers:NO duration:0.0f];
         }
     } completion:^(BOOL finished) {
-        if ([action isEqualToString:@"in"] || [action isEqualToString:@"nopl"])
+        if (action == JASidePanelAnimationActionIn )
             [self.view bringSubviewToFront:self.rightPanelContainer];
-        else if ([action isEqualToString:@"out"] || [action isEqualToString:@"nopc"])
+        else if (action == JASidePanelAnimationActionOut)
             [self.view bringSubviewToFront:self.centerPanelContainer];
         
         self.rightPanelContainer.frame = original;
@@ -1030,24 +1033,10 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     
     if (self.pushesLeftPanelOver)
     {
-        NSString * action = @"in";
-        if (prevState == self.state) action = @"nopl";
-        else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible) action = @"out";
-        if (self.centerPanelContainer.frame.origin.x> self.leftVisibleWidth)
-            action = @"nopl";
-        else
-        if (tmp)
-        {
-            action = @"nopl";
-            [UIView animateWithDuration:0.2 delay:0.0f options:UIViewAnimationOptionCurveLinear|UIViewAnimationOptionLayoutSubviews
-                             animations:^{
-                self.centerPanelContainer.frame = CGRectOffset(self.centerPanelContainer.frame, self.leftVisibleWidth-self.centerPanelContainer.frame.origin.x + MIN(30, self.bouncePercentage*self.centerPanelContainer.frame.size.width), 0);}
-                             completion:^(BOOL finished) {
-                [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
-            }];
-        }
-        else
-            [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
+        JASidePanelAnimationAction action = JASidePanelAnimationActionIn;
+        if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible)
+            action = JASidePanelAnimationActionOut;
+        [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
     }
     
     if (animated) {
@@ -1077,9 +1066,9 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     
     if (self.pushesRightPanelOver)
     {
-        NSString * action = @"in";
-        if (prevState == self.state) action = @"nopl";
-        else if (prevState == JASidePanelRightVisible && self.state == JASidePanelCenterVisible) action = @"out";
+        JASidePanelAnimationAction action = JASidePanelAnimationActionIn;
+        if (prevState == JASidePanelRightVisible && self.state == JASidePanelCenterVisible)
+            action = JASidePanelAnimationActionOut;
         
         [self _animateRightPanelForAction:action bounce:shouldBounce completion:nil];
     }
@@ -1097,6 +1086,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     if (self.style == JASidePanelSingleActive) {
         self.tapView = [[UIView alloc] init];
     }
+    [self addBlurToCenterPanelContainter:YES];
     [self _toggleScrollsToTopForCenter:NO left:NO right:YES];
 }
 
@@ -1106,21 +1096,31 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     
     [self _adjustCenterFrame];
     
+    // first time init
+    if (prevState == 0)
+        [self _layoutSideContainers:NO duration:0.f];
+    
     if (self.pushesLeftPanelOver)
     {
-        NSString * action = @"in";
-        if (prevState == self.state) action = @"nopc";
-        else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible) action = @"out";
+        JASidePanelAnimationAction action = 0;
+        if (prevState == JASidePanelCenterVisible && self.state == JASidePanelLeftVisible)
+            action = JASidePanelAnimationActionIn;
+        else if (prevState == JASidePanelLeftVisible && self.state == JASidePanelCenterVisible)
+            action = JASidePanelAnimationActionOut;
         [self _animateLeftPanelForAction:action bounce:shouldBounce completion:nil];
     }
     if (self.pushesRightPanelOver)
     {
-        NSString * action = @"in";
-        if (prevState == self.state) action = @"nopc";
-        else if (prevState == JASidePanelRightVisible && self.state == JASidePanelCenterVisible) action = @"out";
+        JASidePanelAnimationAction action = 0;
+        if (prevState == JASidePanelCenterVisible && self.state == JASidePanelRightVisible)
+            action = JASidePanelAnimationActionIn;
+        else if (prevState == JASidePanelRightVisible && self.state == JASidePanelCenterVisible)
+            action = JASidePanelAnimationActionOut;
         [self _animateRightPanelForAction:action bounce:shouldBounce completion:nil];
     }
+    
     [self addBlurToCenterPanelContainter:NO];
+    
     if (animated) {
         [self _animateCenterPanel:shouldBounce completion:^(__unused BOOL finished) {
             self.leftPanelContainer.hidden = YES;
