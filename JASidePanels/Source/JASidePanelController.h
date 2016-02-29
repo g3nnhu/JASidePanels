@@ -82,6 +82,9 @@ typedef enum _JASidePanelAnimationAction {
 // push right panel over centerpanel when showing
 @property (nonatomic, assign) BOOL pushesRightPanelOver; // NO
 
+// can blur be casted on center panel
+@property (nonatomic, assign) BOOL canCenterPanelBeBlurred; ///default yes
+
 // size the left panel based on % of total screen width
 @property (nonatomic) CGFloat leftGapPercentage; 
 

@@ -151,6 +151,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
     self.shouldDelegateAutorotateToVisiblePanel = YES;
     self.allowRightSwipe = YES;
     self.allowLeftSwipe = YES;
+    self.canCenterPanelBeBlurred = YES;
 }
 
 #pragma mark - UIViewController
@@ -321,7 +322,7 @@ static NSInteger BLUR_VIEW_TAG = 653954;
         isBlurAvaialable = NO;
     }
     
-    if (hasBlur)
+    if (hasBlur && self.canCenterPanelBeBlurred)
     {
         if (![container viewWithTag:BLUR_VIEW_TAG])
         {
